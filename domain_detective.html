@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Domain Detective</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#172033}
+.container{max-width:1050px;margin:0 auto;padding:24px}
+header{background:#263b80;color:white;border-radius:18px;padding:25px 28px;margin-bottom:20px}
+header h1{margin:0 0 6px;font-size:32px}
+header p{margin:0;opacity:.9}
+.card{background:white;border-radius:18px;padding:24px;box-shadow:0 5px 20px rgba(0,0,0,.08);margin-bottom:20px}
+.controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+select,button,input{font:inherit}
+select{padding:10px 12px;border:1px solid #cbd3e1;border-radius:9px;background:white}
+button{border:0;border-radius:10px;padding:11px 17px;cursor:pointer;font-weight:700}
+.primary{background:#263b80;color:#fff}
+.secondary{background:#e8edf8;color:#263b80}
+.hint{background:#fff4cf;color:#624b00}
+.problem{text-align:center;padding:12px}
+.label{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#69758c;font-weight:700}
+.function{font-size:31px;margin:15px 0 22px;font-weight:600}
+.answer-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.answer-row input{width:min(500px,90vw);padding:13px;border:2px solid #cbd3e1;border-radius:10px}
+.feedback{margin-top:15px;font-weight:700;min-height:24px}
+.correct{color:#18794e}.incorrect{color:#b42318}
+.explain{margin-top:12px;background:#f6f8fc;border-radius:12px;padding:15px;text-align:left;display:none}
+.numberline-wrap{display:none;margin-top:20px;padding:10px}
+.numberline-title{text-align:center;font-weight:700;margin-bottom:12px}
+.numberline{position:relative;height:105px;margin:0 30px}
+.axis{position:absolute;left:0;right:0;top:49px;height:3px;background:#172033}
+.arrow{position:absolute;top:42px;font-size:24px}
+.arrow.left{left:-4px}.arrow.right{right:-4px}
+.tick{position:absolute;top:41px;width:3px;height:17px;background:#172033;transform:translateX(-50%)}
+.tick span{position:absolute;top:20px;left:50%;transform:translateX(-50%);font-size:13px;white-space:nowrap}
+.endpoint{position:absolute;top:38px;width:22px;height:22px;border:3px solid #263b80;border-radius:50%;background:white;transform:translateX(-50%);z-index:3}
+.endpoint.closed{background:#263b80}
+.segment{position:absolute;top:45px;height:10px;background:#263b80;z-index:1}
+.segment.left{border-radius:8px 0 0 8px}.segment.right{border-radius:0 8px 8px 0}
+.segment.all{left:0!important;right:0!important;border-radius:8px}
+.interval-display{text-align:center;font-size:18px;margin-top:4px;color:#45516a}
+.score{float:right;font-weight:700;background:#fff;color:#263b80;padding:7px 11px;border-radius:8px}
+.small{font-size:14px;color:#667085}
+@media(max-width:600px){.function{font-size:25px}.card{padding:18px}.container{padding:12px}}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+  <div class="score">Score: <span id="score">0</span></div>
+  <h1>🔎 Domain Detective</h1>
+  <p>Practice finding the domain of a function and writing it in interval notation.</p>
+</header>
+
+<div class="card">
+  <div class="controls">
+    <label><strong>Difficulty:</strong>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </label>
+    <button class="secondary" onclick="newProblem()">New Problem</button>
+    <button class="hint" onclick="showHint()">💡 Hint</button>
+    <button class="secondary" onclick="toggleNumberLine()">📏 Show Number Line</button>
+  </div>
+</div>
+
+<div class="card problem">
+  <div class="label">Find the domain</div>
+  <div class="function" id="functionText"></div>
+  <div class="small">Write your answer using interval notation.</div>
+  <div class="answer-row">
+    <input id="answer" placeholder="Example: (-∞, 2) ∪ (2, ∞)" autocomplete="off">
+    <button class="primary" onclick="checkAnswer()">Check Answer</button>
+  </div>
+  <div id="feedback" class="feedback"></div>
+  <div id="explanation" class="explain"></div>
+
+  <div id="numberlineWrap" class="numberline-wrap">
+    <div class="numberline-title">Use the number line to help</div>
+    <div class="numberline" id="numberline">
+      <div class="axis"></div>
+      <div class="arrow left">←</div><div class="arrow right">→</div>
+    </div>
+    <div class="interval-display" id="intervalDisplay"></div>
+  </div>
+</div>
+</div>
+
+<script>
+const problems = {
+easy:[
+ {f:"f(x) = 3x + 5", a:"(-∞, ∞)", h:"This is a polynomial. Polynomials have no restrictions on x.", e:"There are no denominators, square roots, or logarithms creating restrictions. The domain is all real numbers."},
+ {f:"f(x) = x² − 4x + 1", a:"(-∞, ∞)", h:"This is a polynomial.", e:"Every real number can be substituted into a polynomial."},
+ {f:"f(x) = √(x + 4)", a:"[-4, ∞)", h:"For a square root, the expression inside must be at least 0.", e:"Set x + 4 ≥ 0. This gives x ≥ −4, so the domain is [-4, ∞)."},
+ {f:"f(x) = √(x − 2)", a:"[2, ∞)", h:"For a square root, the expression inside must be at least 0.", e:"Set x − 2 ≥ 0. This gives x ≥ 2, so the domain is [2, ∞)."},
+ {f:"f(x) = 1/(x − 5)", a:"(-∞, 5) ∪ (5, ∞)", h:"What value makes the denominator equal to 0?", e:"x − 5 = 0 gives x = 5. The function is undefined at 5, so 5 is excluded."}
+],
+medium:[
+ {f:"f(x) = 4/(x + 3)", a:"(-∞, -3) ∪ (-3, ∞)", h:"Set the denominator equal to 0.", e:"x + 3 = 0 gives x = −3. Use parentheses at −3 because it is excluded."},
+ {f:"f(x) = 1/(x² − 9)", a:"(-∞, -3) ∪ (-3, 3) ∪ (3, ∞)", h:"Factor x² − 9 and find where the denominator is 0.", e:"x² − 9 = (x − 3)(x + 3), so x = −3 and x = 3 are excluded."},
+ {f:"f(x) = √(2x − 6)", a:"[3, ∞)", h:"The expression inside a square root must be ≥ 0.", e:"2x − 6 ≥ 0 gives x ≥ 3. The endpoint is included, so use a bracket."},
+ {f:"f(x) = √(7 − x)", a:"(-∞, 7]", h:"Set the radicand greater than or equal to 0.", e:"7 − x ≥ 0 gives x ≤ 7. Since 7 is allowed, use a bracket."},
+ {f:"f(x) = 1/√(x − 1)", a:"(1, ∞)", h:"Because the square root is in the denominator, it cannot equal 0.", e:"x − 1 must be strictly greater than 0. Therefore x > 1 and the domain is (1, ∞)."},
+ {f:"f(x) = √(x + 5)/(x − 2)", a:"[-5, 2) ∪ (2, ∞)", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"x + 5 ≥ 0 gives x ≥ −5. Also x ≠ 2. Combining them gives [-5,2) ∪ (2,∞)."}
+],
+hard:[
+ {f:"f(x) = (x + 1)/(x² − 4)", a:"(-∞, -2) ∪ (-2, 2) ∪ (2, ∞)", h:"Only denominator restrictions matter for a rational function.", e:"x² − 4 = (x − 2)(x + 2). The denominator is zero at −2 and 2, so both are excluded."},
+ {f:"f(x) = √((x − 1)/(x + 2))", a:"(-∞, -2) ∪ [1, ∞)", h:"The expression under the square root must be ≥ 0. Make a sign chart using the critical values −2 and 1.", e:"The rational expression is nonnegative on x < −2 and x ≥ 1. The value −2 is excluded because it makes the denominator zero; 1 is included."},
+ {f:"f(x) = 1/(x² + x − 6)", a:"(-∞, -3) ∪ (-3, 2) ∪ (2, ∞)", h:"Factor the denominator and find its zeros.", e:"x² + x − 6 = (x + 3)(x − 2). Exclude −3 and 2."},
+ {f:"f(x) = √(9 − x)/(x + 1)", a:"(-∞, -1) ∪ (-1, 9]", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"9 − x ≥ 0 gives x ≤ 9. Also x ≠ −1. Combining them gives (-∞,-1) ∪ (-1,9]."},
+ {f:"f(x) = √(x + 1)/(x − 4)", a:"[-1, 4) ∪ (4, ∞)", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"x + 1 ≥ 0 gives x ≥ −1. Also x ≠ 4. Combining them gives [-1,4) ∪ (4,∞)."}
+]
+};
+
+let current=null, score=0, used=[];
+const $=id=>document.getElementById(id);
+
+function newProblem(){
+ const level=$("difficulty").value;
+ let pool=problems[level], choices=pool.filter(p=>!used.includes(p));
+ if(!choices.length){used=[]; choices=pool}
+ current=choices[Math.floor(Math.random()*choices.length)];
+ used.push(current);
+ $("functionText").textContent=current.f;
+ $("answer").value="";
+ $("feedback").textContent="";
+ $("feedback").className="feedback";
+ $("explanation").style.display="none";
+ $("numberlineWrap").style.display="none";
+ drawNumberLine(current.a);
+}
+
+function normalize(s){
+ return s.toLowerCase().replace(/\s+/g,"").replace(/∞/g,"infinity")
+ .replace(/−/g,"-").replace(/–/g,"-").replace(/\u2212/g,"-")
+ .replace(/\\infty/g,"infinity").replace(/\\cup|union/g,"∪")
+ .replace(/\u222a/g,"∪").replace(/\[/g,"[").replace(/\]/g,"]");
+}
+function checkAnswer(){
+ if(!current)return;
+ const given=normalize($("answer").value), expected=normalize(current.a);
+ if(given===expected){
+   score++;
+   $("score").textContent=score;
+   $("feedback").textContent="✓ Correct! Great job.";
+   $("feedback").className="feedback correct";
+   $("explanation").innerHTML="<strong>Why:</strong> "+current.e;
+   $("explanation").style.display="block";
+ }else{
+   $("feedback").textContent="Not quite. Check your interval notation and try again.";
+   $("feedback").className="feedback incorrect";
+   $("explanation").innerHTML="<strong>Hint:</strong> "+current.h;
+   $("explanation").style.display="block";
+ }
+}
+function showHint(){
+ if(!current)return;
+ $("explanation").innerHTML="<strong>💡 Hint:</strong> "+current.h;
+ $("explanation").style.display="block";
+}
+function toggleNumberLine(){
+ const el=$("numberlineWrap");
+ el.style.display=el.style.display==="block"?"none":"block";
+ drawNumberLine(current.a);
+}
+function fracToNum(s){
+ if(s.includes("/")){let [a,b]=s.split("/");return parseFloat(a)/parseFloat(b)}
+ return parseFloat(s);
+}
+function drawNumberLine(interval){
+ const nl=$("numberline");
+ nl.querySelectorAll(".tick,.endpoint,.segment").forEach(x=>x.remove());
+ let points=[];
+ let re=/([[(])(-?[\d./]+|infinity),\s*(-?[\d./]+|infinity)([\])])/g, m;
+ while((m=re.exec(interval.replace(/∞/g,"infinity")))) points.push(m);
+ if(!points.length){
+   $("intervalDisplay").textContent=interval;
+   return;
+ }
+ let finite=[];
+ points.forEach(m=>{if(m[2]!=="-infinity"&&m[2]!=="infinity")finite.push(fracToNum(m[2]));if(m[3]!=="infinity"&&m[3]!=="-infinity")finite.push(fracToNum(m[3]))});
+ finite=[...new Set(finite)].sort((a,b)=>a-b);
+ if(!finite.length){$("intervalDisplay").textContent=interval;return}
+ let min=finite[0],max=finite[finite.length-1], span=Math.max(2,max-min+2);
+ const pos=v=>Math.max(5,Math.min(95,5+(v-(min-1))/span*90));
+ finite.forEach(v=>{
+   let t=document.createElement("div");t.className="tick";t.style.left=pos(v)+"%";
+   let lab=document.createElement("span");lab.textContent=Number.isInteger(v)?v:v.toFixed(2);t.appendChild(lab);nl.appendChild(t);
+ });
+ points.forEach(m=>{
+   let l=m[2],r=m[3], lv=l===" -infinity"?-Infinity:(l==="infinity"?Infinity:fracToNum(l)), rv=r==="infinity"?Infinity:(r===" -infinity"?-Infinity:fracToNum(r));
+   let left=lv===-Infinity?0:pos(lv), right=rv===Infinity?100:pos(rv);
+   let seg=document.createElement("div");seg.className="segment";seg.style.left=left+"%";seg.style.width=(right-left)+"%";nl.appendChild(seg);
+   if(lv!==-Infinity){let ep=document.createElement("div");ep.className="endpoint "+(m[1]==="["?"closed":"");ep.style.left=left+"%";nl.appendChild(ep)}
+   if(rv!==Infinity){let ep=document.createElement("div");ep.className="endpoint "+(m[4]==="]"?"closed":"");ep.style.left=right+"%";nl.appendChild(ep)}
+ });
+ $("intervalDisplay").textContent="The shaded portion represents the domain.";
+}
+$("answer").addEventListener("keydown",e=>{if(e.key==="Enter")checkAnswer()});
+$("difficulty").addEventListener("change",newProblem);
+newProblem();
+</script>
+</body>
+</html>
