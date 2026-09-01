@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Domain Detective</title>
+<script>
+window.MathJax = {
+  tex: {inlineMath: [['\\(','\\)']], displayMath: [['\\[','\\]']]},
+  svg: {fontCache: 'global'}
+};
+</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#172033}
@@ -21,7 +28,7 @@ button{border:0;border-radius:10px;padding:11px 17px;cursor:pointer;font-weight:
 .hint{background:#fff4cf;color:#624b00}
 .problem{text-align:center;padding:12px}
 .label{font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#69758c;font-weight:700}
-.function{font-size:31px;margin:15px 0 22px;font-weight:600}
+.function{font-size:31px;min-height:55px;margin:15px 0 22px;font-weight:600;display:flex;align-items:center;justify-content:center}
 .answer-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .answer-row input{width:min(500px,90vw);padding:13px;border:2px solid #cbd3e1;border-radius:10px}
 .feedback{margin-top:15px;font-weight:700;min-height:24px}
@@ -71,8 +78,8 @@ button{border:0;border-radius:10px;padding:11px 17px;cursor:pointer;font-weight:
 
 <div class="card problem">
   <div class="label">Find the domain</div>
-  <div class="function" id="functionText"></div>
-  <div class="small">Write your answer using interval notation.</div>
+  <div class="function" id="functionText">\\(\\)</div>
+  <div class="small">Write your answer using interval notation. You may use <strong>U</strong> for union and type <strong>infinity</strong> instead of ∞.</div>
   <div class="answer-row">
     <input id="answer" placeholder="Example: (-∞, 2) ∪ (2, ∞)" autocomplete="off">
     <button class="primary" onclick="checkAnswer()">Check Answer</button>
@@ -94,26 +101,26 @@ button{border:0;border-radius:10px;padding:11px 17px;cursor:pointer;font-weight:
 <script>
 const problems = {
 easy:[
- {f:"f(x) = 3x + 5", a:"(-∞, ∞)", h:"This is a polynomial. Polynomials have no restrictions on x.", e:"There are no denominators, square roots, or logarithms creating restrictions. The domain is all real numbers."},
- {f:"f(x) = x² − 4x + 1", a:"(-∞, ∞)", h:"This is a polynomial.", e:"Every real number can be substituted into a polynomial."},
- {f:"f(x) = √(x + 4)", a:"[-4, ∞)", h:"For a square root, the expression inside must be at least 0.", e:"Set x + 4 ≥ 0. This gives x ≥ −4, so the domain is [-4, ∞)."},
- {f:"f(x) = √(x − 2)", a:"[2, ∞)", h:"For a square root, the expression inside must be at least 0.", e:"Set x − 2 ≥ 0. This gives x ≥ 2, so the domain is [2, ∞)."},
- {f:"f(x) = 1/(x − 5)", a:"(-∞, 5) ∪ (5, ∞)", h:"What value makes the denominator equal to 0?", e:"x − 5 = 0 gives x = 5. The function is undefined at 5, so 5 is excluded."}
+ {f:"\\(f(x)=3x+5\\)", a:"(-∞, ∞)", h:"This is a polynomial. Polynomials have no restrictions on x.", e:"There are no denominators, square roots, or logarithms creating restrictions. The domain is all real numbers."},
+ {f:"\\(f(x)=x^2-4x+1\\)", a:"(-∞, ∞)", h:"This is a polynomial.", e:"Every real number can be substituted into a polynomial."},
+ {f:"\\(f(x)=\\sqrt{x+4}\\)", a:"[-4, ∞)", h:"For a square root, the expression inside must be at least 0.", e:"Set x + 4 ≥ 0. This gives x ≥ −4, so the domain is [-4, ∞)."},
+ {f:"\\(f(x)=\\sqrt{x-2}\\)", a:"[2, ∞)", h:"For a square root, the expression inside must be at least 0.", e:"Set x − 2 ≥ 0. This gives x ≥ 2, so the domain is [2, ∞)."},
+ {f:"\\(f(x)=\\frac{1}{x-5}\\)", a:"(-∞, 5) ∪ (5, ∞)", h:"What value makes the denominator equal to 0?", e:"x − 5 = 0 gives x = 5. The function is undefined at 5, so 5 is excluded."}
 ],
 medium:[
- {f:"f(x) = 4/(x + 3)", a:"(-∞, -3) ∪ (-3, ∞)", h:"Set the denominator equal to 0.", e:"x + 3 = 0 gives x = −3. Use parentheses at −3 because it is excluded."},
- {f:"f(x) = 1/(x² − 9)", a:"(-∞, -3) ∪ (-3, 3) ∪ (3, ∞)", h:"Factor x² − 9 and find where the denominator is 0.", e:"x² − 9 = (x − 3)(x + 3), so x = −3 and x = 3 are excluded."},
- {f:"f(x) = √(2x − 6)", a:"[3, ∞)", h:"The expression inside a square root must be ≥ 0.", e:"2x − 6 ≥ 0 gives x ≥ 3. The endpoint is included, so use a bracket."},
- {f:"f(x) = √(7 − x)", a:"(-∞, 7]", h:"Set the radicand greater than or equal to 0.", e:"7 − x ≥ 0 gives x ≤ 7. Since 7 is allowed, use a bracket."},
- {f:"f(x) = 1/√(x − 1)", a:"(1, ∞)", h:"Because the square root is in the denominator, it cannot equal 0.", e:"x − 1 must be strictly greater than 0. Therefore x > 1 and the domain is (1, ∞)."},
- {f:"f(x) = √(x + 5)/(x − 2)", a:"[-5, 2) ∪ (2, ∞)", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"x + 5 ≥ 0 gives x ≥ −5. Also x ≠ 2. Combining them gives [-5,2) ∪ (2,∞)."}
+ {f:"\\(f(x)=\\frac{4}{x+3}\\)", a:"(-∞, -3) ∪ (-3, ∞)", h:"Set the denominator equal to 0.", e:"x + 3 = 0 gives x = −3. Use parentheses at −3 because it is excluded."},
+ {f:"\\(f(x)=\\frac{1}{x^2-9}\\)", a:"(-∞, -3) ∪ (-3, 3) ∪ (3, ∞)", h:"Factor x² − 9 and find where the denominator is 0.", e:"x² − 9 = (x − 3)(x + 3), so x = −3 and x = 3 are excluded."},
+ {f:"\\(f(x)=\\sqrt{2x-6}\\)", a:"[3, ∞)", h:"The expression inside a square root must be ≥ 0.", e:"2x − 6 ≥ 0 gives x ≥ 3. The endpoint is included, so use a bracket."},
+ {f:"\\(f(x)=\\sqrt{7-x}\\)", a:"(-∞, 7]", h:"Set the radicand greater than or equal to 0.", e:"7 − x ≥ 0 gives x ≤ 7. Since 7 is allowed, use a bracket."},
+ {f:"\\(f(x)=\\frac{1}{\\sqrt{x-1}}\\)", a:"(1, ∞)", h:"Because the square root is in the denominator, it cannot equal 0.", e:"x − 1 must be strictly greater than 0. Therefore x > 1 and the domain is (1, ∞)."},
+ {f:"\\(f(x)=\\frac{\\sqrt{x+5}}{x-2}\\)", a:"[-5, 2) ∪ (2, ∞)", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"x + 5 ≥ 0 gives x ≥ −5. Also x ≠ 2. Combining them gives [-5,2) ∪ (2,∞)."}
 ],
 hard:[
- {f:"f(x) = (x + 1)/(x² − 4)", a:"(-∞, -2) ∪ (-2, 2) ∪ (2, ∞)", h:"Only denominator restrictions matter for a rational function.", e:"x² − 4 = (x − 2)(x + 2). The denominator is zero at −2 and 2, so both are excluded."},
- {f:"f(x) = √((x − 1)/(x + 2))", a:"(-∞, -2) ∪ [1, ∞)", h:"The expression under the square root must be ≥ 0. Make a sign chart using the critical values −2 and 1.", e:"The rational expression is nonnegative on x < −2 and x ≥ 1. The value −2 is excluded because it makes the denominator zero; 1 is included."},
- {f:"f(x) = 1/(x² + x − 6)", a:"(-∞, -3) ∪ (-3, 2) ∪ (2, ∞)", h:"Factor the denominator and find its zeros.", e:"x² + x − 6 = (x + 3)(x − 2). Exclude −3 and 2."},
- {f:"f(x) = √(9 − x)/(x + 1)", a:"(-∞, -1) ∪ (-1, 9]", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"9 − x ≥ 0 gives x ≤ 9. Also x ≠ −1. Combining them gives (-∞,-1) ∪ (-1,9]."},
- {f:"f(x) = √(x + 1)/(x − 4)", a:"[-1, 4) ∪ (4, ∞)", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"x + 1 ≥ 0 gives x ≥ −1. Also x ≠ 4. Combining them gives [-1,4) ∪ (4,∞)."}
+ {f:"\\(f(x)=\\frac{x+1}{x^2-4}\\)", a:"(-∞, -2) ∪ (-2, 2) ∪ (2, ∞)", h:"Only denominator restrictions matter for a rational function.", e:"x² − 4 = (x − 2)(x + 2). The denominator is zero at −2 and 2, so both are excluded."},
+ {f:"\\(f(x)=\\sqrt{\\frac{x-1}{x+2}}\\)", a:"(-∞, -2) ∪ [1, ∞)", h:"The expression under the square root must be ≥ 0. Make a sign chart using the critical values −2 and 1.", e:"The rational expression is nonnegative on x < −2 and x ≥ 1. The value −2 is excluded because it makes the denominator zero; 1 is included."},
+ {f:"\\(f(x)=\\frac{1}{x^2+x-6}\\)", a:"(-∞, -3) ∪ (-3, 2) ∪ (2, ∞)", h:"Factor the denominator and find its zeros.", e:"x² + x − 6 = (x + 3)(x − 2). Exclude −3 and 2."},
+ {f:"\\(f(x)=\\frac{\\sqrt{9-x}}{x+1}\\)", a:"(-∞, -1) ∪ (-1, 9]", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"9 − x ≥ 0 gives x ≤ 9. Also x ≠ −1. Combining them gives (-∞,-1) ∪ (-1,9]."},
+ {f:"\\(f(x)=\\frac{\\sqrt{x+1}}{x-4}\\)", a:"[-1, 4) ∪ (4, ∞)", h:"You need both: the radicand must be ≥ 0 and the denominator cannot be 0.", e:"x + 1 ≥ 0 gives x ≥ −1. Also x ≠ 4. Combining them gives [-1,4) ∪ (4,∞)."}
 ]
 };
 
@@ -126,7 +133,7 @@ function newProblem(){
  if(!choices.length){used=[]; choices=pool}
  current=choices[Math.floor(Math.random()*choices.length)];
  used.push(current);
- $("functionText").textContent=current.f;
+ $("functionText").innerHTML=current.f; if(window.MathJax){MathJax.typesetPromise([$("functionText")]);}
  $("answer").value="";
  $("feedback").textContent="";
  $("feedback").className="feedback";
@@ -136,14 +143,18 @@ function newProblem(){
 }
 
 function normalize(s){
- return s.toLowerCase().replace(/\s+/g,"").replace(/∞/g,"infinity")
- .replace(/−/g,"-").replace(/–/g,"-").replace(/\u2212/g,"-")
- .replace(/\\infty/g,"infinity").replace(/\\cup|union/g,"∪")
- .replace(/\u222a/g,"∪").replace(/\[/g,"[").replace(/\]/g,"]");
+ return s.toLowerCase()
+   .replace(/\s+/g,"")
+   .replace(/−/g,"-").replace(/–/g,"-").replace(/\u2212/g,"-")
+   .replace(/∞|\\infty/g,"infinity")
+   .replace(/∪/g,"u")
+   .replace(/union/g,"u");
 }
 function checkAnswer(){
  if(!current)return;
- const given=normalize($("answer").value), expected=normalize(current.a);
+ const given=normalize($("answer").value);
+ const expected=normalize(current.a);
+
  if(given===expected){
    score++;
    $("score").textContent=score;
